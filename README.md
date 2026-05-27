@@ -3,8 +3,10 @@
 这是一个基于小样本学习的YOLOv11模型和神经网络分割模型nnU-Net（本项目里称为YOLOnl和UNetnl）的脑瘤检测系统，可实现肿瘤的精确识别和分割，使用Mayavi+VTK实现了肿瘤区域3D可视化，打造了医患双端以实现交流功能，用来辅助医生进行诊疗。 
 为了防止医疗信息泄露，仅适用于本地电脑部署
 
-## 功能特点
+<img width="481" height="477" alt="屏幕截图 2026-05-27 160005" src="https://github.com/user-attachments/assets/4328f3d1-b46e-427f-b349-dc5b6602ef33" />
 
+## 功能特点
+<img width="1875" height="814" alt="屏幕截图 2026-05-27 155756" src="https://github.com/user-attachments/assets/2ae142c3-c110-438b-b5d4-e8ea7b70b45c" />
 1. **脑瘤检测**: 使用YOLOv11模型进行脑瘤检测，支持图像上传和实时分析
 2. **医患交流**: 提供患者与医生之间的交流平台，支持实时消息传递
 3. **用户管理**: 支持用户注册和登录功能，区分患者和医生角色
@@ -50,6 +52,7 @@
      - 预测类别（健康/肿瘤）
      - 置信度分数
      - 各类别概率分布
+<img width="481" height="477" alt="屏幕截图 2026-05-27 160005" src="https://github.com/user-attachments/assets/809555ae-cf4f-4dd7-9aa0-f8aff40abdd7" />
 
 3. **医患交流**:
    - 在患者平台中选择要交流的医生
@@ -65,6 +68,12 @@
    - 登录后访问医生平台 (`http://localhost:5000/doctor`)
    - 将患者脑部mri文件上传至服务器
    - 系统将自动对上传的mri文件进行分割，并生成分割结果图
+   - <img width="491" height="461" alt="屏幕截图 2026-05-27 160047" src="https://github.com/user-attachments/assets/6ae07ba8-1d91-494d-8e46-d563a267a129" />
+
+6. **3D可视化**:
+   对肿瘤分割完后自动生成3D效果图
+   <img width="827" height="626" alt="屏幕截图 2026-05-27 160119" src="https://github.com/user-attachments/assets/69781339-1bc5-4001-b649-ffb02283d77f" />
+
 ## 技术栈
 
 - Python 3.x
@@ -73,7 +82,7 @@
 - HTML/CSS/JavaScript (前端技术)
 - MySQL (数据库)
 - nnU-Net (脑瘤分割模型)
-
+- Mayavi+VTK（3D可视化）
 ## 错误处理
 
 - 前端实现了健壮的错误处理机制，能够捕获并显示各种异常情况
