@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>脑瘤检测测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>脑瘤检测测试页面</h1>
+    
+    <div class="upload-area" id="uploadArea">
+        <p>拖拽图像文件到此处或点击下方按钮选择文件</p>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <button onclick="document.getElementById('fileInput').click()">选择图像文件</button>
+        <p><small>支持格式: JPG, PNG, BMP, TIFF</small></p>
+    </div>
+    
+    <div class="loading" id="loading">
+        <p>正在分析图像，请稍候...</p>
+    </div>
+    
+    <div class="result" id="result" style="display: none;"></div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const loadingDiv = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#007cba';
+            uploadArea.style.backgroundColor = '#f0f8ff';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ccc';
+            uploadArea.style.backgroundColor = 'white';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ccc';
+            uploadArea.style.backgroundColor = 'white';
+            
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('请选择有效的图像文件！');
+                return;
+            }
+
+            sendFileToServer(file);
+        }
+
+        function sendFileToServer(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // 显示加载动画
+            loadingDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            fetch('http://localhost:5000/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${text}`);
+                    });
+                }
+                
+                // 检查响应的内容类型是否为JSON
+                const contentType = response.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+                
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // 如果不是JSON，获取文本内容
+                    return response.text().then(text => {
+                        console.log('Non-JSON response:', text);
+                        throw new Error(`非JSON响应: ${text.substring(0, 200)}...`);
+                    });
+                }
+            })
+            .then(data => {
+                // 隐藏加载动画
+                loadingDiv.style.display = 'none';
+                
+                if (data.error) {
+                    resultDiv.innerHTML = `<h3 style="color: red;">错误</h3><p>${data.error}</p>`;
+                } else {
+                    displayResults(data);
+                }
+                
+                resultDiv.style.display = 'block';
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                resultDiv.innerHTML = `
+                    <h3 style="color: red;">请求失败</h3>
+                    <p>${error.message}</p>
+                    <p>请检查后端服务是否正在运行在 http://localhost:5000</p>
+                `;
+                resultDiv.style.display = 'block';
+                console.error('Error:', error);
+            });
+        }
+
+        function displayResults(data) {
+            let resultHtml = '<h3>检测结果</h3>';
+            
+            // 主要预测结果
+            const isTumor = data.predicted_class.toLowerCase().includes('tumor') || 
+                           data.predicted_class.toLowerCase() === 'tumor';
+            
+            resultHtml += `
+                <div>
+                    <h4 style="color: ${isTumor ? '#e74c3c' : '#27ae60'};">
+                        ${isTumor ? '检测到脑瘤' : '未检测到脑瘤'}
+                    </h4>
+                    <p><strong>预测类别:</strong> ${data.predicted_class}</p>
+                    <p><strong>置信度:</strong> ${(data.confidence * 100).toFixed(2)}%</p>
+                </div>
+            `;
+            
+            // 所有类别的概率
+            resultHtml += '<div><strong>各类别概率:</strong><br>';
+            for (const [className, probability] of Object.entries(data.all_probabilities)) {
+                const percentage = (probability * 100).toFixed(2);
+                resultHtml += `<div>${className}: ${percentage}%</div>`;
+            }
+            resultHtml += '</div>';
+            
+            resultDiv.innerHTML = resultHtml;
+        }
+    </script>
+</body>
+</html>

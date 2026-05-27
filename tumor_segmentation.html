@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>肿瘤分割系统</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .healing-text-left, .healing-text-right {
+            position: fixed;
+            top: 50%;
+            font-size: 6rem;
+            font-weight: bold;
+            color: rgba(139, 195, 74, 0.1);
+            pointer-events: none;
+            z-index: 0;
+            animation: float 6s ease-in-out infinite;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        .healing-text-left {
+            left: 5%;
+            transform: translateY(-50%);
+        }
+
+        .healing-text-right {
+            right: 5%;
+            transform: translateY(-50%);
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(-50%) translatey(0px);
+            }
+            50% {
+                transform: translateY(-50%) translatey(-20px);
+            }
+            100% {
+                transform: translateY(-50%) translatey(0px);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-transform: none;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #43a047 0%, #5cb860 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #8bc34a 0%, #9ccc65 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 195, 74, 0.4);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 195, 74, 0.5);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(67, 160, 71, 0.4);
+        }
+
+        .btn-info:hover {
+            background: linear-gradient(135deg, #388e3c 0%, #43a047 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 160, 71, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #4caf50;
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #4caf50;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background-color: #e8f5e9;
+        }
+
+        .upload-area.dragover {
+            background-color: #c8e6c9;
+            border-color: #2e7d32;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #4caf50;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .file-item:hover {
+            background-color: #e8f5e9;
+            transform: translateX(5px);
+        }
+
+        .file-item.active {
+            background-color: #c8e6c9;
+            border-left: 4px solid #4caf50;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .file-remove {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s;
+        }
+
+        .file-remove:hover {
+            background-color: #c0392b;
+        }
+
+        .file-count {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background-color: #e8f5e9;
+            border-radius: 5px;
+            color: #4caf50;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .image-preview {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .result-area {
+            text-align: center;
+        }
+
+        .result-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .segmentation-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .info-item {
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .info-value {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4caf50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .history-item:hover {
+            background-color: #e8f5e9;
+        }
+
+        .history-item.active {
+            background-color: #c8e6c9;
+            border-left: 4px solid #4caf50;
+        }
+
+        .history-time {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        /* 模态窗口样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h4 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            text-align: center;
+        }
+
+        .history-modal-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            text-align: center;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔬 肿瘤分割系统</h1>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="window.location.href='doctor.html'">← 返回医生平台</button>
+                <button class="btn btn-info" onclick="location.reload()">刷新</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h3>📤 上传医学影像</h3>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">点击或拖拽上传医学影像文件（支持多文件）</div>
+                    <div class="upload-text" style="font-size: 0.9em;">支持格式: DICOM, NIfTI, PNG, JPG</div>
+                    <input type="file" class="file-input" id="fileInput" accept=".dcm,.nii,.nii.gz,.png,.jpg,.jpeg" multiple>
+                </div>
+                <div class="file-count" id="fileCount" style="display: none;">已选择 0 个文件</div>
+                <div class="file-list" id="fileList"></div>
+                <img class="image-preview" id="imagePreview" alt="预览图像">
+                
+                <div class="controls">
+                    <button class="btn btn-primary" id="segmentBtn" onclick="performSegmentation()" disabled>开始分割</button>
+                    <button class="btn btn-secondary" onclick="resetUpload()">重置</button>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在处理图像，请稍候...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🎯 分割结果</h3>
+                <div class="result-area">
+                    <img class="result-image" id="resultImage" alt="分割结果">
+                    <div id="noResult" style="padding: 40px; color: #999;">
+                        请上传图像并点击"开始分割"按钮
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="downloadResult()" id="downloadBtn" disabled>下载结果</button>
+                    <button class="btn btn-secondary" onclick="saveToHistory()" id="saveBtn" disabled>保存到历史</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h3>📜 分割历史记录</h3>
+            <div class="history-list" id="historyList">
+                <div style="padding: 20px; text-align: center; color: #999;">
+                    暂无历史记录
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 历史记录模态窗口 -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>历史分割结果</h4>
+                <span class="close" onclick="closeHistoryModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="historyModalContent">
+                    <img id="historyImage" class="history-modal-image" alt="历史分割结果">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeHistoryModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080';
+        let uploadedFiles = [];
+        let segmentationHistory = [];
+        let currentResult = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const segmentBtn = document.getElementById('segmentBtn');
+        const loading = document.getElementById('loading');
+        const resultImage = document.getElementById('resultImage');
+        const noResult = document.getElementById('noResult');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const fileList = document.getElementById('fileList');
+        const fileCount = document.getElementById('fileCount');
+
+        // 页面加载时检查服务状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkServiceStatus();
+        });
+
+        // 检查服务状态
+        function checkServiceStatus() {
+            fetch(`${API_BASE_URL}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        console.log('服务状态正常:', data.data.version);
+                    } else {
+                        console.warn('服务状态异常');
+                    }
+                })
+                .catch(error => {
+                    console.error('无法连接到服务:', error);
+                });
+        }
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) {
+                handleFiles(files);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFiles(Array.from(e.target.files));
+            }
+        });
+
+        function handleFiles(files) {
+            const validTypes = ['.dcm', '.nii', '.nii.gz', '.png', '.jpg', '.jpeg'];
+            let validFiles = [];
+
+            files.forEach(file => {
+                const fileName = file.name.toLowerCase();
+                const isValid = validTypes.some(type => fileName.endsWith(type));
+
+                if (isValid) {
+                    validFiles.push(file);
+                } else {
+                    alert(`文件 ${file.name} 格式不支持，已跳过`);
+                }
+            });
+
+            if (validFiles.length === 0) {
+                alert('请上传有效的医学影像文件！');
+                return;
+            }
+
+            uploadedFiles = [...uploadedFiles, ...validFiles];
+            updateFileList();
+            segmentBtn.disabled = false;
+        }
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            
+            if (uploadedFiles.length === 0) {
+                fileCount.style.display = 'none';
+                return;
+            }
+
+            fileCount.style.display = 'block';
+            fileCount.textContent = `已选择 ${uploadedFiles.length} 个文件`;
+
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                    </div>
+                    <button class="file-remove" onclick="removeFile(${index})">删除</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileList();
+            
+            if (uploadedFiles.length === 0) {
+                segmentBtn.disabled = true;
+            }
+        }
+
+        function resetUpload() {
+            uploadedFiles = [];
+            currentResult = null;
+            imagePreview.style.display = 'none';
+            imagePreview.src = '';
+            uploadArea.style.display = 'block';
+            uploadArea.innerHTML = `
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">点击或拖拽上传医学影像文件（支持多文件）</div>
+                <div class="upload-text" style="font-size: 0.9em;">支持格式: DICOM, NIfTI, PNG, JPG</div>
+                <input type="file" class="file-input" id="fileInput" accept=".dcm,.nii,.nii.gz,.png,.jpg,.jpeg" multiple>
+            `;
+            fileList.innerHTML = '';
+            fileCount.style.display = 'none';
+            segmentBtn.disabled = true;
+            resultImage.style.display = 'none';
+            noResult.style.display = 'block';
+            downloadBtn.disabled = true;
+            saveBtn.disabled = true;
+        }
+
+        async function performSegmentation() {
+            if (uploadedFiles.length === 0) {
+                alert('请先上传图像文件！');
+                return;
+            }
+
+            loading.style.display = 'block';
+            segmentBtn.disabled = true;
+
+            const formData = new FormData();
+            uploadedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            try {
+                const endpoint = uploadedFiles.length > 1 ? '/predict/folder' : '/predict/file';
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    displayResult(result.data);
+                } else {
+                    alert('分割失败: ' + result.msg);
+                }
+            } catch (error) {
+                console.error('分割请求失败:', error);
+                alert('分割请求失败: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                segmentBtn.disabled = false;
+            }
+        }
+
+        function displayResult(result) {
+            if (result.contour_url) {
+                resultImage.src = `${API_BASE_URL}${result.contour_url}`;
+                resultImage.style.display = 'block';
+                noResult.style.display = 'none';
+            }
+
+            currentResult = result;
+            downloadBtn.disabled = false;
+            saveBtn.disabled = false;
+        }
+
+        function downloadResult() {
+            if (!currentResult) {
+                alert('没有可下载的结果！');
+                return;
+            }
+
+            if (currentResult.contour_url) {
+                const downloadUrl = currentResult.download_url || currentResult.contour_url;
+                window.open(`${API_BASE_URL}${downloadUrl}`, '_blank');
+            } else {
+                alert('没有可下载的结果文件！');
+            }
+        }
+
+        function saveToHistory() {
+            const fileNames = uploadedFiles.map(f => f.name).join(', ');
+            const historyItem = {
+                id: Date.now(),
+                fileName: fileNames.length > 50 ? fileNames.substring(0, 50) + '...' : fileNames,
+                fileCount: uploadedFiles.length,
+                time: new Date().toLocaleString(),
+                imageUrl: resultImage.src
+            };
+
+            segmentationHistory.unshift(historyItem);
+            updateHistoryList();
+            alert('已保存到历史记录！');
+        }
+
+        function updateHistoryList() {
+            const historyList = document.getElementById('historyList');
+            
+            if (segmentationHistory.length === 0) {
+                historyList.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        暂无历史记录
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = segmentationHistory.map(item => `
+                <div class="history-item" onclick="loadHistoryItem(${item.id})">
+                    <div><strong>${item.fileCount} 个文件: ${item.fileName}</strong></div>
+                    <div class="history-time">${item.time}</div>
+                </div>
+            `).join('');
+        }
+
+        function loadHistoryItem(id) {
+            const item = segmentationHistory.find(h => h.id === id);
+            if (item && item.imageUrl) {
+                const historyImage = document.getElementById('historyImage');
+                const historyModal = document.getElementById('historyModal');
+                historyImage.src = item.imageUrl;
+                historyModal.style.display = 'block';
+            }
+        }
+
+        function closeHistoryModal() {
+            const historyModal = document.getElementById('historyModal');
+            historyModal.style.display = 'none';
+        }
+
+        // 点击模态窗口外部关闭
+        window.onclick = function(event) {
+            const historyModal = document.getElementById('historyModal');
+            if (event.target == historyModal) {
+                historyModal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
