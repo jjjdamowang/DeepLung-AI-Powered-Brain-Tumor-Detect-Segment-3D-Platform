@@ -3,7 +3,6 @@
 这是一个基于小样本学习的YOLOv11模型和神经网络分割模型nnU-Net（本项目里称为YOLOnl和UNetnl）的脑瘤检测系统，可实现肿瘤的精确识别和分割，使用Mayavi+VTK实现了肿瘤区域3D可视化，打造了医患双端以实现交流功能，用来辅助医生进行诊疗。 
 为了防止医疗信息泄露，仅适用于本地电脑部署
 
-<img width="481" height="477" alt="屏幕截图 2026-05-27 160005" src="https://github.com/user-attachments/assets/4328f3d1-b46e-427f-b349-dc5b6602ef33" />
 
 ## 功能特点
 <img width="1875" height="814" alt="屏幕截图 2026-05-27 155756" src="https://github.com/user-attachments/assets/2ae142c3-c110-438b-b5d4-e8ea7b70b45c" />
